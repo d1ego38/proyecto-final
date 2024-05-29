@@ -1,125 +1,135 @@
+/*
+   Fundacion Kinal
+   Centro educativo tecnico laboral Kinal
+   Quinto perito
+   Quinto electronica
+   Codigo Tecnico: EB5AV 
+   Curso: Taller de electronica digital y reparacion de computadoras I
+   Dev: Diego Emanuel Yos Pinzon
+   link HitHub: 
+   
+*/
+
 #include <Wire.h>
-#include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
+#include <LiquidCrystal_I2C.h>
 #include <Servo.h>
 
-#define f1_teclado 2
-#define f2_teclado 3
-#define f3_teclado 4
-#define f4_teclado 5
-#define c1_teclado 6
-#define c2_teclado 7
-#define c3_teclado 8
-#define c4_teclado 9
+#define direccion_lcd 0x27
 
-#define filas_teclado 4
-#define columnas_teclado 4
+LiquidCrystal_I2C LCD_PF(direccion_lcd, 16, 2);
+Servo servo_1;
 
-char keys[filas_teclado][columnas_teclado] = {
-  {'1', '2', '3', '4'},
-  {'4', '5', '6', 'B'},
-  {'7', '8', '9', 'C'},
-  {'*', '0', '#', 'D'}
+const int filas = 2;
+const int columnas = 3;
+char keys[filas][columnas] = {
+  {'1', '2', '3'},
+  {'4', '5', '6'},
 };
+byte pinesFila[filas] = {13, 12};
+byte pinesColumna[columnas] = {10, 9, 8};
+Keypad teclado = Keypad(makeKeymap(keys), pinesFila, pinesColumna, filas, columnas);
 
-byte rowPins[filas_teclado] = {f1_teclado, f2_teclado, f3_teclado, f4_teclado};
-byte colPins[columnas_teclado] = {c1_teclado, c2_teclado, c3_teclado, c4_teclado};
+char teclaPresionada;
 
-Keypad teclado = Keypad(makeKeymap(keys), rowPins, colPins, filas_teclado, columnas_teclado);
-Servo myservo;
-LiquidCrystal_I2C lcd(0x27, 16, 2);
-
-#define servoPin 10
-#define LED1 A2
-#define LED2 A3
-#define LED3 A4
-#define LED4 A5
-
-#define CI1 1
-#define CI2 2
-#define CI3 3
-#define CI4 4
-
-int contador = 0;
-bool contando = false;
-bool decrementando = false;
-bool animacion = false;
-bool contadorDisplay = false;
-char ultimaTecla = NO_KEY;
+int tiempo = 100;
+const int pinesLeds[] = {14, 15, 16, 17};
+const int pinesDisplay[] = {7, 6, 5, 4, 3, 2, 1};
 
 void setup() {
-  Serial.begin(9600);
+  servo_1.attach(11);
+  servo_1.write(0);
 
-  pinMode(LED1, OUTPUT);
-  pinMode(LED2, OUTPUT);
-  pinMode(LED3, OUTPUT);
-  pinMode(LED4, OUTPUT);
+  LCD_PF.init();
+  LCD_PF.backlight();
+  LCD_PF.clear();
+  LCD_PF.setCursor(5, 0);
+  LCD_PF.print("Diego");
+  LCD_PF.setCursor(1, 1);
+  LCD_PF.print("Proyecto Final");
 
-  pinMode(CI1, OUTPUT);
-  pinMode(CI2, OUTPUT);
-  pinMode(CI3, OUTPUT);
-  pinMode(CI4, OUTPUT);
-
-  myservo.attach(servoPin);
-
-  lcd.init();
-  lcd.backlight();
-  lcd.setCursor(0, 0);
-  lcd.print("    Diego Yos    ");
-  lcd.setCursor(0, 1);
-  lcd.print("Proyecto Final");
-
-  Serial.println("Presione '1' para iniciar el contador ascendente.");
-  Serial.println("Presione '2' para iniciar el contador descendente.");
-  Serial.println("Presione '3' para iniciar la animación del auto fantástico.");
-  Serial.println("Presione '4' para iniciar el contador de 0 a 9 en el display.");
-  Serial.println("Presione '5' para mover el servomotor de 0 a 180 grados.");
+  for (int i = 0; i < 4; i++) {
+    pinMode(pinesLeds[i], OUTPUT);
+  }
+  for (int i = 0; i < 7; i++) {
+    pinMode(pinesDisplay[i], OUTPUT);
+  }
 }
 
 void loop() {
-  char tecla = teclado.getKey();
-
-  if (tecla != NO_KEY) {
-    if (tecla == '1') {
-      Serial.println("Contador ascendente iniciado.");
-      for (int i = 0; i <= 99; i++) {
+  teclaPresionada = teclado.getKey();
+  switch (teclaPresionada) {
+    case '1':
+      Serial.begin(9600);
+      Serial.println("contador de 0 a 99;");
+      for (int i = 0; i < 100; i++) {
         Serial.println(i);
-        delay(200);
+        delay(tiempo);
       }
-    }
+      Serial.end();
+      break;
 
-    if (tecla == '2') {
-      Serial.println("Contador descendente iniciado.");
+    case '2':
+      Serial.begin(9600);
+      Serial.println("contador de 99 a 0;");
       for (int i = 99; i >= 0; i--) {
         Serial.println(i);
-        delay(200);
+        delay(tiempo);
       }
-    }
+      Serial.end();
+      break;
 
-    if (tecla == '3') {
-      Serial.println("Animación del auto fantástico iniciada.");
-      for (int i = 0; i < 4; i++) {
-        digitalWrite(LED1 + i, HIGH);
-        delay(200);
-        digitalWrite(LED1 + i, LOW);
+    case '3':
+      for (int led = 0; led < 3; led++) {
+        digitalWrite(pinesLeds[led], HIGH);
+        delay(tiempo);
+        if (led + 1 < 4) {
+          digitalWrite(pinesLeds[led + 1], HIGH);
+          delay(tiempo);
+          digitalWrite(pinesLeds[led], LOW);
+          delay(tiempo);
+        }
       }
-    }
+      for (int led = 3; led > 0; led--) {
+        digitalWrite(pinesLeds[led], HIGH);
+        delay(tiempo);
+        digitalWrite(pinesLeds[led - 1], HIGH);
+        delay(tiempo);
+        digitalWrite(pinesLeds[led], LOW);
+        delay(tiempo);
+      }
+      digitalWrite(14, LOW);
+      break;
 
-    if (tecla == '4') {
-      Serial.println("Animacion");
-      digitalWrite(CI1, LOW);
-      digitalWrite(CI2, LOW);
-      digitalWrite(CI3, LOW);
-      digitalWrite(CI4, HIGH);
-      delay(500);
-    }
+    case '4':
+      delay(1000);
+      animacionDisplay();
+      break;
 
-    if (tecla == '5') {
-      Serial.println("Movimiento del servomotor iniciado.");
-      myservo.write(0);
-      delay(1000);
-      myservo.write(180);
-      delay(1000);
-    }
+    case '5':
+      delay(tiempo);
+      servo_1.write(180);
+      delay(5000);
+      servo_1.write(0);
+      break;
   }
 }
+
+void animacionDisplay() {
+  for (int i = 0; i < 3; i++) {
+    digitalWrite(pinesDisplay[0], HIGH);
+    digitalWrite(pinesDisplay[2], HIGH);
+    digitalWrite(pinesDisplay[3], HIGH);
+    digitalWrite(pinesDisplay[5], HIGH);
+    delay(tiempo);
+    apagarDisplay();
+    delay(tiempo);
+  }
+}
+
+void apagarDisplay() {
+  for (int i = 0; i < 7; i++) {
+    digitalWrite(pinesDisplay[i], LOW);
+  }
+}
+
